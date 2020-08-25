@@ -791,7 +791,6 @@ class SmithForPreTraining(SmithPreTrainedModel):
 
         document_output_embeddings = sequence_output2.view(-1, self.document_config.hidden_size)
         masked_output_embeddings = document_output_embeddings[mask_indices, :]
-        print(document_output_embeddings.shape, mask_indices, masked_output_embeddings, sentence_block_labels)
 
         total_loss = None
         if labels is not None and label_docs is not None:
