@@ -753,7 +753,7 @@ class SmithForPreTraining(SmithPreTrainedModel):
         pooled_output1 = self.sentence_pooler(sequence_output1)
 
         prediction_scores = self.lm_head(sequence_output1)
-        print(prediction_scores.shape, len(encoder_outputs1))
+
         # resplit batch into invididual documents
         pooled_output_split = torch.split(pooled_output1, split_idx, dim=0)
 	
@@ -764,11 +764,11 @@ class SmithForPreTraining(SmithPreTrainedModel):
         # pad each document with zeros so that all documents have the same shape
         for i in range(len(split_idx)):
             num_rows_to_pad = num_sentence_blocks - split_idx[i]
-            zero_padding =  torch.zeros(num_rows_to_pad, self.sentence_config.hidden_size)
+            zero_padding =  torch.zeros(num_rows_to_pad, self.sentence_config.hidden_size, device=device)
             doc_input_list.append(torch.cat([pooled_output_split[i], zero_padding], dim=0))
 		
         sentence_block_embeddings, sentence_block_labels, mask_indices = mask_sentence_blocks(
-            doc_input_list, self.document_config.max_position_embeddings, split_idx, self.sentence_block_mask_vector
+            doc_input_list, self.document_config.max_position_embeddings, split_idx, self.sentence_block_mask_vector.to(device)
         )
 
         attention_mask = torch.ones_like(sentence_block_embeddings)
@@ -789,9 +789,9 @@ class SmithForPreTraining(SmithPreTrainedModel):
         )
         sequence_output2 = encoder_outputs2[0]
 
-        print(sequence_output2.shape, sentence_block_embeddings.shape, sentence_block_labels.shape)
-        document_output_embeddings = sequence_output2.view(-1, self.document_config.hidden_size) # check accuracy of this
+        document_output_embeddings = sequence_output2.view(-1, self.document_config.hidden_size)
         masked_output_embeddings = document_output_embeddings[mask_indices, :]
+        print(document_output_embeddings.shape, mask_indices, masked_output_embeddings, sentence_block_labels)
 
         total_loss = None
         if labels is not None and label_docs is not None:
@@ -932,7 +932,7 @@ class SmithModel(SmithPreTrainedModel):
         # pad each document with zeros so that all documents have the same shape
         for i in range(len(split_idx)):
             num_rows_to_pad = num_sentence_blocks - split_idx[i]
-            zero_padding =  torch.zeros(num_rows_to_pad, self.sentence_config.hidden_size)
+            zero_padding =  torch.zeros(num_rows_to_pad, self.sentence_config.hidden_size, device=device)
             doc_input_list.append(torch.cat([pooled_output_split[i], zero_padding], dim=0))
 		
         sentence_block_embeddings = torch.stack(doc_input_list)
