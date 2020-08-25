@@ -797,7 +797,6 @@ class SmithForPreTraining(SmithPreTrainedModel):
             loss_fct = CrossEntropyLoss() # ignore index -100
             masked_lm_loss = loss_fct(prediction_scores.view(-1, self.sentence_config.vocab_size), labels.view(-1))
             masked_block_loss = masked_sentence_block_loss(masked_output_embeddings, sentence_block_labels)
-            print(masked_lm_loss, masked_block_loss)
             total_loss = masked_lm_loss + masked_block_loss
 
         if not return_dict:
@@ -810,7 +809,7 @@ class SmithForPreTraining(SmithPreTrainedModel):
             else:
                 output = (prediction_scores, sequence_output2) 
 
-            return ((total_loss,) + output) if total_loss is not None else output
+            return ((masked_lm_loss, masked_block_loss,) + output) if total_loss is not None else output
 
         return BaseModelOutputWithPooling(
             last_hidden_state=sequence_output,
